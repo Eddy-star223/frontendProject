@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Note Management System</title>
+  <link rel="stylesheet" href="noteSystem.css" />
+</head>
+<body>
+
+  <div class="container">
+    <h1>📝 Note Management System</h1>
+
+    
+    <input type="text" id="searchInput" placeholder="Search notes..." />
+
+    
+    <form id="noteForm">
+      <input type="text" id="title" placeholder="Title" required />
+      <textarea id="content" placeholder="Content" required></textarea>
+      <button type="submit">Add Note</button>
+    </form>
+
+    
+    <div id="noteDisplay">
+      <h2>📂 Your Notes</h2>
+      <ul id="noteList"></ul>
+    </div>
+  </div>
+
+  <script src="noteSystem.js"></script>
+</body>
+</html>
