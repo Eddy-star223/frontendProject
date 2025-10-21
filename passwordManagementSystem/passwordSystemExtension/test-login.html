@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wyser Login Test</title>
+</head>
+<body>
+    <style>
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #1e1e2f, #2a2a3d);
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+
+  form {
+    background-color: #2e2e3e;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  input {
+    padding: 10px;
+    margin-bottom: 15px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+  }
+
+  input[type="text"],
+  input[type="email"] {
+    background-color: #444;
+    color: #fff;
+  }
+
+  input[type="password"] {
+    background-color: #444;
+    color: #fff;
+  }
+
+  button {
+    padding: 10px;
+    background-color: #00bfa5;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  button:hover {
+    background-color: #009e8a;
+  }
+</style>
+  <form>
+    <input type="text" name="username" placeholder="Username" />
+    <input type="password" name="password" placeholder="Password" />
+    <button type="submit">Login</button>
+  </form>
+</body>
+</html>

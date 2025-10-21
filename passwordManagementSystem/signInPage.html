@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Wyser Vault</title>
+  <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="signInPage.css">
+
+</head>
+<body>
+
+  <header>
+    <nav class="navBar">
+      <a href="#" class="nav-branding">🔐 WYSER 🔐 VAULT 🔐</a>
+      <div class="openMenu"><i class='bx bx-menu'></i></div>
+      <ul class="nav-menu">
+        <li><a href="passwordSystemLogin.html" class="nav-btn">Login</a></li>
+        <div class="closeMenu"><i class='bx bx-x'></i></div>
+      </ul>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div class="hero-text">
+      <h1>Welcome to Wyser's password management system</h1>
+      <p>Secure your digital life with encrypted peace of mind.</p>
+      <a href="passwordSystemRegister.html" class="btn">Get Started</a>
+    </div>
+  
+  </section>
+
+
+  <script>
+    const openMenu = document.querySelector('.openMenu');
+    const closeMenu = document.querySelector('.closeMenu');
+    const navMenu = document.querySelector('.nav-menu');
+
+    openMenu.addEventListener('click', () => {
+      navMenu.classList.add('active');
+    });
+
+    closeMenu.addEventListener('click', () => {
+      navMenu.classList.remove('active');
+    });
+  </script>
+
+</body>
+</html>
