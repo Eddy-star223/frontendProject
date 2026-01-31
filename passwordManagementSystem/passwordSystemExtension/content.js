@@ -1,103 +1,201 @@
-const currentSite = window.location.hostname.replace(/^www\./, "");
+const currentHost = window.location.hostname.replace(/^www\./, "");
 
+let autofilled = false;
+
+/** Simple Toast for status feedback */
 function showToast(message) {
   const toast = document.createElement("div");
   toast.textContent = message;
-  toast.style.position = "fixed";
-  toast.style.bottom = "20px";
-  toast.style.right = "20px";
-  toast.style.background = "#00bfa5";
-  toast.style.color = "#fff";
-  toast.style.padding = "10px 20px";
-  toast.style.borderRadius = "5px";
-  toast.style.zIndex = "9999";
-  toast.style.fontFamily = "Segoe UI";
+  Object.assign(toast.style, {
+    position: "fixed",
+    bottom: "20px",
+    right: "20px",
+    background: "#00bfa5",
+    color: "#fff",
+    padding: "10px 20px",
+    borderRadius: "5px",
+    zIndex: "99999",
+    fontFamily: "Segoe UI, sans-serif",
+    boxShadow: "0 3px 8px rgba(0,0,0,0.2)",
+    transition: "opacity 0.3s ease",
+  });
   document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
 }
 
-chrome.storage.local.get(["vault"], data => {
-  const vault = data.vault || [];
+/** Chrome-like save prompt */
+function showSavePrompt(username, password) {
+  const overlay = document.createElement("div");
+  Object.assign(overlay.style, {
+    position: "fixed",
+    bottom: "20px",
+    right: "20px",
+    background: "#fff",
+    border: "1px solid #ccc",
+    padding: "12px 16px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+    borderRadius: "8px",
+    zIndex: "999999",
+    fontFamily: "Segoe UI, sans-serif",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: "8px",
+  });
 
-  const demoVaultEntry = {
-    siteName: "facebook.com",
-    username: "wyser123",
-    password: "myPassword" 
-  };
+  overlay.innerHTML = `
+    <div style="font-weight:600; font-size:14px;">Save password for ${currentHost}?</div>
+    <div style="font-size:13px; color:#333;">
+      <b>${username}</b><br/>••••••••
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button id="savePwdBtn" style="background:#00bfa5; color:white; border:none; padding:6px 10px; border-radius:5px; cursor:pointer;">Save</button>
+      <button id="neverBtn" style="background:#ccc; border:none; padding:6px 10px; border-radius:5px; cursor:pointer;">Never</button>
+    </div>
+  `;
 
-  const alreadyExists = vault.some(entry =>
-    entry.siteName === demoVaultEntry.siteName &&
-    entry.username === demoVaultEntry.username
-  );
+  document.body.appendChild(overlay);
 
-  if (!alreadyExists) {
-    vault.push(demoVaultEntry);
-    chrome.storage.local.set({ vault }, () => {
-      console.log("Demo credentials injected into vault");
+  const removePrompt = () => overlay.remove();
+
+  overlay.querySelector("#savePwdBtn").addEventListener("click", () => {
+    chrome.storage.local.get(["vault"], data => {
+      const vault = data.vault || [];
+      vault.push({ siteUrl: window.location.origin, username, password });
+      chrome.storage.local.set({ vault }, () => {
+        showToast(" Password saved!");
+        removePrompt();
+      });
     });
-  }
-});
+  });
 
+  overlay.querySelector("#neverBtn").addEventListener("click", removePrompt);
+}
+
+/** Autofill main logic */
+function runVaultAutofill(form) {
+  setTimeout(() => {
+    chrome.storage.local.get(["vault"], data => {
+      const vault = data.vault || [];
+      const match = vault.find(entry => {
+        try {
+          const entryHost = new URL(entry.siteUrl).hostname.replace(/^www\./, "");
+          return currentHost === entryHost;
+        } catch {
+          return false;
+        }
+      });
+
+      const usernameInput =
+        form.querySelector("input[name*='user'], input[name*='email'], input[id*='email'], input[type='text'], input[type='email']");
+      const passwordInput = form.querySelector("input[name*='pass'], input[id*='pass'], input[type='password']");
+
+      console.log("Detected username input:", usernameInput);
+      console.log("Detected password input:", passwordInput);
+
+      if (!usernameInput || !passwordInput) {
+        console.warn("Inputs not found");
+        return;
+      }
+
+      usernameInput.setAttribute("autocomplete", "username");
+      passwordInput.setAttribute("autocomplete", "current-password");
+
+      if (match && match.password) {
+        usernameInput.value = match.username;
+        passwordInput.value = match.password;
+        showToast(`Autofilled credentials for ${currentHost}`);
+        console.log(`Autofilled credentials for ${currentHost}`);
+      } else {
+        console.warn("No matching credentials found");
+      }
+
+      const saveCredentials = () => {
+        const payload = {
+          siteUrl: window.location.origin,
+          username: usernameInput.value,
+          password: passwordInput.value,
+          userId: JSON.parse(localStorage.getItem("user"))?.userId || "wyser001",
+        };
+
+        // (Optional) Sync with backend
+        fetch("http://localhost:8080/api/passwordSystem", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: localStorage.getItem("authHeader"),
+          },
+          body: JSON.stringify(payload),
+        })
+          .then(res => {
+            if (res.ok) {
+              console.log("Synced credentials to backend");
+              showToast("Credentials synced successfully");
+            } else {
+              console.warn("⚠ Backend rejected credentials");
+              showToast("⚠ Failed to sync credentials");
+            }
+          })
+          .catch(err => {
+            console.error("Sync failed:", err);
+            showToast("Error syncing credentials");
+          });
+
+        // Show popup prompt regardless of backend success
+        showSavePrompt(usernameInput.value, passwordInput.value);
+      };
+
+      // Handle native or custom submits
+      form.addEventListener("submit", saveCredentials);
+      form.querySelectorAll("button, input[type='submit']").forEach(btn =>
+        btn.addEventListener("click", saveCredentials)
+      );
+    });
+  }, 500);
+}
+
+/** Persistent MutationObserver (detects dynamic login forms) */
 const observer = new MutationObserver(() => {
-  const form = document.querySelector("form") || document.querySelector("input[type='password']")?.closest("form");
-  if (form) {
-    observer.disconnect();
-    runVaultAutofill(form);
-    showToast(`Autofilled credentials for ${currentSite}`);
+  console.log("Mutation detected, checking for forms...");
+  if(!autofilled) {
+    const form =
+    document.querySelector("form") ||
+    document.querySelector("input[type='password']")?.closest("form");
+    
+    if (form) {
+    console.log("Form detected on", form);
+    autofilled = true;
+    runVaultAutofill(form);}
   }
+
 });
 
 observer.observe(document.body, { childList: true, subtree: true });
 
-function runVaultAutofill(form) {
+/** Fallback for DOM ready */
+document.addEventListener("DOMContentLoaded", () => {
+  const form =
+    document.querySelector("form") ||
+    document.querySelector("input[type='password']")?.closest("form");
+  if (form && !form.dataset.vaultBound) {
+    form.dataset.vaultBound = "true";
+    runVaultAutofill(form);
+  }
+});
 
-  chrome.storage.local.get(["vault"], data => {
-    const vault = data.vault || [];
-    const match = vault.find(entry => currentSite === entry.siteName.replace(/^www\./, ""));
-
-    const usernameInput = form.querySelector("input[type='text'], input[type='email']");
-    const passwordInput = form.querySelector("input[type='password']");
-
-    if (!usernameInput || !passwordInput) {
-      console.warn("Inputs not found");
-      return;
-    }
-
-    usernameInput.setAttribute("autocomplete", "username");
-    passwordInput.setAttribute("autocomplete", "current-password");
-
-    if (match && match.password) {
-      usernameInput.value = match.username;
-      passwordInput.value = match.password;
-      console.log(`Autofilled credentials for ${currentSite}`);
-    } else {
-      console.warn("No matching credentials found");
-    }
-
-    form.addEventListener("submit", () => {
-      const payload = {
-        siteName: currentSite,
-        username: usernameInput.value,
-        password: passwordInput.value, 
-        userId: JSON.parse(localStorage.getItem("user"))?.userId || "wyser001"
-      };
-
-      fetch("http://localhost:8080/api/passwordSystem", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: localStorage.getItem("authHeader")
-        },
-        body: JSON.stringify(payload)
-      }).then(res => {
-        if (res.ok) {
-          console.log("Synced credentials to backend");
-        } else {
-          console.warn("Backend rejected credentials");
-        }
-      }).catch(err => {
-        console.error("Sync failed:", err);
-      });
-    });
-  });
-}
+/** Temporary seeded vault for testing */
+chrome.storage.local.set(
+  {
+    vault: [
+      {
+        siteUrl: "https://github.com/login",
+        username: "wyser@gmail.com",
+        password: "myPassword",
+      },
+    ],
+  },
+  () => console.log(" Vault entry saved for test.")
+);

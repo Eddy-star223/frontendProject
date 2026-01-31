@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error(data?.message || "Registration failed");
       }
 
-      alert("✅ Registration successful! You can now log in.");
+      alert("Registration successful! You can now log in.");
       window.location.href = "passwordSystemLogin.html";
     } catch (error) {
       console.error("Registration error:", error);

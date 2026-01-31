@@ -69,10 +69,10 @@ function renderPasswordList(entries) {
     card.classList.add("vault-card");
 
     card.innerHTML = `
-      <h3>${entry.siteName}</h3>
+      <h3>${entry.siteUrl}</h3>
       <p><strong>Username:</strong> ${entry.username}</p>
       <p><strong>Password:</strong> ${decrypted}</p>
-      <button onclick="openEditModal(${entry.entryId}, '${entry.siteName}', '${entry.username}', '${entry.decryptedPassword}')">✏️ Edit</button>
+      <button onclick="openEditModal(${entry.entryId}, '${entry.siteUrl}', '${entry.username}', '${entry.decryptedPassword}')">✏️ Edit</button>
       <button onclick="deletePassword(${entry.entryId})"><i class="fa-solid fa-trash"></i> Delete</button>
     `;
 
@@ -84,18 +84,18 @@ function renderPasswordList(entries) {
 async function handleAddPassword(e) {
   e.preventDefault();
 
-  const siteName = document.getElementById("siteName").value.trim();
+  const siteUrl = document.getElementById("siteUrl").value.trim();
   const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value.trim();
   const userId = JSON.parse(localStorage.getItem("user")).userId;
   const authHeader = localStorage.getItem("authHeader");
 
-  if (!siteName || !username || !password) {
+  if (!siteUrl || !username || !password) {
     alert("All fields are required.");
     return;
   }
 
-  const payload = { siteName, username, password, userId };
+  const payload = { siteUrl, username, password, userId };
 
   try {
     const response = await fetch("http://localhost:8080/api/passwordSystem", {
